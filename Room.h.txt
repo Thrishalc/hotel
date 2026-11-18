@@ -1,0 +1,29 @@
+#ifndef ROOM_H
+#define ROOM_H
+
+#include <string>
+using namespace std;
+
+class Room {
+private:
+    int roomNumber;
+    string roomType;
+    double price;
+    bool isBooked;
+    string customerID;
+
+public:
+    Room(int number, string type, double cost);
+
+    int getRoomNumber() const;
+    string getRoomType() const;
+    double getPrice() const;
+    bool getStatus() const;
+    string getCustomerID() const;
+
+    void bookRoom(string id);
+    void checkoutRoom();
+    void displayRoom() const;
+};
+
+#endif

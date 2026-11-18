@@ -1,0 +1,23 @@
+#ifndef CUSTOMER_H
+#define CUSTOMER_H
+
+#include <string>
+using namespace std;
+
+class Customer {
+private:
+    string customerID;
+    string name;
+    string phone;
+
+public:
+    Customer(string id, string n, string p);
+
+    string getID() const;
+    string getName() const;
+    string getPhone() const;
+
+    void displayCustomer() const;
+};
+
+#endif

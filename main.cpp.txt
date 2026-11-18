@@ -1,0 +1,503 @@
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <limits>
+
+using namespace std;
+
+// ================= ROOM CLASS =================
+
+class Room {
+private:
+    int roomNumber;
+    string roomType;
+    double price;
+    bool isBooked;
+    string customerID;
+
+public:
+    Room(int number, string type, double cost,
+         bool booked = false, string id = "")
+        : roomNumber(number), roomType(type),
+          price(cost), isBooked(booked),
+          customerID(id) {}
+
+    int getRoomNumber() const {
+        return roomNumber;
+    }
+
+    string getRoomType() const {
+        return roomType;
+    }
+
+    double getPrice() const {
+        return price;
+    }
+
+    bool getStatus() const {
+        return isBooked;
+    }
+
+    string getCustomerID() const {
+        return customerID;
+    }
+
+    void bookRoom(string id) {
+        if (!isBooked) {
+            isBooked = true;
+            customerID = id;
+        }
+    }
+
+    void checkoutRoom() {
+        isBooked = false;
+        customerID = "";
+    }
+
+    void displayRoom() const {
+        cout << "Room Number: " << roomNumber
+             << "\nType: " << roomType
+             << "\nPrice: Rs. " << price
+             << "\nStatus: "
+             << (isBooked ? "Booked" : "Available")
+             << "\n----------------------\n";
+    }
+};
+
+// ================= CUSTOMER CLASS =================
+
+class Customer {
+private:
+    string customerID;
+    string name;
+    string phone;
+
+public:
+    Customer(string id, string n, string p)
+        : customerID(id), name(n), phone(p) {}
+
+    string getID() const {
+        return customerID;
+    }
+
+    string getName() const {
+        return name;
+    }
+
+    string getPhone() const {
+        return phone;
+    }
+
+    void displayCustomer() const {
+        cout << "\nCustomer ID: " << customerID
+             << "\nName: " << name
+             << "\nPhone: " << phone
+             << "\n----------------------\n";
+    }
+};
+
+// ================= HOTEL CLASS =================
+
+class Hotel {
+private:
+    vector<Room> rooms;
+    vector<Customer> customers;
+
+    const string roomFile = "rooms.txt";
+    const string customerFile = "customers.txt";
+
+    // Prevent file delimiter problems
+    bool validText(const string& value) {
+        return !value.empty() &&
+               value.find('|') == string::npos &&
+               value.find('\n') == string::npos;
+    }
+
+    Room* findRoom(int number) {
+        for (auto& room : rooms) {
+            if (room.getRoomNumber() == number)
+                return &room;
+        }
+        return nullptr;
+    }
+
+    Customer* findCustomer(const string& id) {
+        for (auto& customer : customers) {
+            if (customer.getID() == id)
+                return &customer;
+        }
+        return nullptr;
+    }
+
+public:
+
+    // Constructor
+    Hotel() {
+        loadData();
+
+        // Create default rooms if no room records exist
+        if (rooms.empty()) {
+            rooms.emplace_back(101, "Single", 1500);
+            rooms.emplace_back(102, "Double", 2500);
+            rooms.emplace_back(103, "Deluxe", 3500);
+            rooms.emplace_back(104, "Suite", 5000);
+            rooms.emplace_back(105, "Single", 1500);
+
+            saveRooms();
+        }
+    }
+
+    // ================= FILE HANDLING =================
+
+    void saveRooms() {
+        ofstream file(roomFile);
+
+        if (!file) {
+            cout << "Error saving room data!\n";
+            return;
+        }
+
+        for (const auto& room : rooms) {
+            file << room.getRoomNumber() << "|"
+                 << room.getRoomType() << "|"
+                 << room.getPrice() << "|"
+                 << room.getStatus() << "|"
+                 << room.getCustomerID() << "\n";
+        }
+
+        file.close();
+    }
+
+    void saveCustomers() {
+        ofstream file(customerFile);
+
+        if (!file) {
+            cout << "Error saving customer data!\n";
+            return;
+        }
+
+        for (const auto& customer : customers) {
+            file << customer.getID() << "|"
+                 << customer.getName() << "|"
+                 << customer.getPhone() << "\n";
+        }
+
+        file.close();
+    }
+
+    void loadData() {
+        // Load rooms
+        ifstream roomInput(roomFile);
+        string line;
+
+        while (getline(roomInput, line)) {
+            stringstream ss(line);
+
+            string number, type, price, booked, id;
+
+            if (!getline(ss, number, '|') ||
+                !getline(ss, type, '|') ||
+                !getline(ss, price, '|') ||
+                !getline(ss, booked, '|') ||
+                !getline(ss, id, '|'))
+                continue;
+
+            try {
+                int roomNo = stoi(number);
+                double cost = stod(price);
+
+                if (roomNo <= 0 || cost < 0 ||
+                    (booked != "0" && booked != "1"))
+                    continue;
+
+                rooms.emplace_back(
+                    roomNo, type, cost,
+                    booked == "1", id
+                );
+            }
+            catch (...) {
+                continue;
+            }
+        }
+
+        // Load customers
+        ifstream customerInput(customerFile);
+
+        while (getline(customerInput, line)) {
+            stringstream ss(line);
+
+            string id, name, phone;
+
+            if (!getline(ss, id, '|') ||
+                !getline(ss, name, '|') ||
+                !getline(ss, phone))
+                continue;
+
+            customers.emplace_back(id, name, phone);
+        }
+    }
+
+    // ================= ROOM MANAGEMENT =================
+
+    void displayRooms() {
+        cout << "\n===== ROOM DETAILS =====\n";
+
+        for (const auto& room : rooms) {
+            room.displayRoom();
+        }
+    }
+
+    // ================= CUSTOMER REGISTRATION =================
+
+    void registerCustomer() {
+        string id, name, phone;
+
+        cout << "\nEnter Customer ID: ";
+        getline(cin, id);
+
+        cout << "Enter Customer Name: ";
+        getline(cin, name);
+
+        cout << "Enter Phone Number: ";
+        getline(cin, phone);
+
+        if (!validText(id) || !validText(name) ||
+            !validText(phone)) {
+            cout << "Invalid or empty customer details!\n";
+            return;
+        }
+
+        if (findCustomer(id) != nullptr) {
+            cout << "Customer ID already exists!\n";
+            return;
+        }
+
+        customers.emplace_back(id, name, phone);
+
+        saveCustomers();
+
+        cout << "Customer registered successfully!\n";
+    }
+
+    // ================= ROOM BOOKING =================
+
+    void bookRoom() {
+        int number;
+        string id;
+
+        cout << "\nEnter Room Number: ";
+
+        if (!(cin >> number)) {
+            cout << "Invalid room number!\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            return;
+        }
+
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        Room* room = findRoom(number);
+
+        if (room == nullptr) {
+            cout << "Room not found!\n";
+            return;
+        }
+
+        if (room->getStatus()) {
+            cout << "Sorry! Room is already booked.\n";
+            return;
+        }
+
+        cout << "Enter Customer ID: ";
+        getline(cin, id);
+
+        Customer* customer = findCustomer(id);
+
+        if (customer == nullptr) {
+            cout << "Customer not registered!\n";
+            return;
+        }
+
+        room->bookRoom(id);
+
+        saveRooms();
+
+        cout << "\nRoom booked successfully!\n";
+        cout << "Customer: " << customer->getName() << "\n";
+        cout << "Room Number: " << number << "\n";
+    }
+
+    // ================= CHECKOUT =================
+
+    void checkout() {
+        int number;
+
+        cout << "\nEnter Room Number: ";
+
+        if (!(cin >> number)) {
+            cout << "Invalid room number!\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            return;
+        }
+
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        Room* room = findRoom(number);
+
+        if (room == nullptr) {
+            cout << "Room not found!\n";
+            return;
+        }
+
+        if (!room->getStatus()) {
+            cout << "Room is already available!\n";
+            return;
+        }
+
+        cout << "Customer ID: "
+             << room->getCustomerID() << "\n";
+
+        room->checkoutRoom();
+
+        saveRooms();
+
+        cout << "Checkout completed successfully!\n";
+    }
+
+    // ================= SEARCH ROOM =================
+
+    void searchRoom() {
+        int number;
+
+        cout << "\nEnter Room Number: ";
+
+        if (!(cin >> number)) {
+            cout << "Invalid room number!\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            return;
+        }
+
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        Room* room = findRoom(number);
+
+        if (room != nullptr) {
+            room->displayRoom();
+        } else {
+            cout << "Room not found!\n";
+        }
+    }
+
+    // ================= SEARCH CUSTOMER =================
+
+    void searchCustomer() {
+        string id;
+
+        cout << "\nEnter Customer ID: ";
+        getline(cin, id);
+
+        Customer* customer = findCustomer(id);
+
+        if (customer != nullptr) {
+            customer->displayCustomer();
+
+            for (const auto& room : rooms) {
+                if (room.getCustomerID() == id) {
+                    cout << "Currently booked room: "
+                         << room.getRoomNumber() << "\n";
+                    return;
+                }
+            }
+
+            cout << "No active room booking.\n";
+        } else {
+            cout << "Customer not found!\n";
+        }
+    }
+
+    // ================= MAIN MENU =================
+
+    void menu() {
+        int choice;
+
+        do {
+            cout << "\n================================\n";
+            cout << "     HOTEL MANAGEMENT SYSTEM\n";
+            cout << "================================\n";
+
+            cout << "1. Display All Rooms\n";
+            cout << "2. Register Customer\n";
+            cout << "3. Book Room\n";
+            cout << "4. Checkout\n";
+            cout << "5. Search Room\n";
+            cout << "6. Search Customer\n";
+            cout << "7. Exit\n";
+
+            cout << "Enter your choice: ";
+
+            if (!(cin >> choice)) {
+                cout << "Invalid input! Enter a number.\n";
+                cin.clear();
+                cin.ignore(
+                    numeric_limits<streamsize>::max(), '\n'
+                );
+                continue;
+            }
+
+            cin.ignore(
+                numeric_limits<streamsize>::max(), '\n'
+            );
+
+            switch (choice) {
+                case 1:
+                    displayRooms();
+                    break;
+
+                case 2:
+                    registerCustomer();
+                    break;
+
+                case 3:
+                    bookRoom();
+                    break;
+
+                case 4:
+                    checkout();
+                    break;
+
+                case 5:
+                    searchRoom();
+                    break;
+
+                case 6:
+                    searchCustomer();
+                    break;
+
+                case 7:
+                    saveRooms();
+                    saveCustomers();
+                    cout << "Thank you for using our system!\n";
+                    break;
+
+                default:
+                    cout << "Invalid choice! Try again.\n";
+            }
+
+        } while (choice != 7);
+    }
+};
+
+// ================= MAIN FUNCTION =================
+
+int main() {
+    Hotel hotel;
+
+    hotel.menu();
+
+    return 0;
+}
